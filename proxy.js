@@ -10,6 +10,7 @@ var http = require('http'),
     https = require('https');
     util = require('util');
     fs   = require('fs');
+    url = require('url');
 
 exports.createServer = function(config) {
   blacklist = config.blacklist || [],
@@ -142,6 +143,21 @@ exports.createServer = function(config) {
       return false;
     } else {//append a tattoo to it
       request.headers.proxy="node.jtlebi";
+      return request;
+    }
+  }
+
+  function healthCheck(request, response) {
+    if(request.headers.proxy=="node.jtlebi") {
+      parsedUrl = url.parse(request.url);
+      if(parsedUrl.pathname == '/healthy') {
+        util.log("Health Check detected");
+        response.writeHead(200);
+        response.write("Healthy");
+        response.end();
+        return false;
+      }
+    } else {
       return request;
     }
   }
@@ -292,6 +308,10 @@ exports.createServer = function(config) {
       securityLog(request, response, msg);    
       return;
     }
+
+    //Health Check
+    request = healthCheck(request, response);
+    if(!request){return;}
     
     //loop filter
     request = preventLoop(request, response);
